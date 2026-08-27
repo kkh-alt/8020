@@ -5,7 +5,7 @@
  * ======================================================================= */
 const CONFIG = {
   // Google Cloud Console에서 발급한 "웹 애플리케이션" OAuth 클라이언트 ID
-  CLIENT_ID: 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+  CLIENT_ID: '734219715437-4ndg1hnrrkkh50pet2slojsqse60q9du.apps.googleusercontent.com.apps.googleusercontent.com',
 
   // 구글 드라이브 Audio 폴더 ID (이미 채워져 있음)
   FOLDER_ID: '1s4unsga_O2BOG5wvzr7t-CkA3XVEAmsB',
