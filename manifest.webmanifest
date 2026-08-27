@@ -1,0 +1,19 @@
+{
+  "name": "나만의 어학학습기",
+  "short_name": "어학학습기",
+  "description": "구글 드라이브 Audio 폴더의 음원으로 듣기·따라 말하기 연습",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

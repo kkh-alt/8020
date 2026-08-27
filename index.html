@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#4f46e5" />
+  <title>나만의 어학학습기</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="icon.svg" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <!-- 상단: 재생기 -->
+    <section class="player card" aria-label="재생기">
+      <div class="now" id="nowPlaying">음원을 선택하세요</div>
+
+      <input
+        type="range" id="seek" class="seek"
+        min="0" max="100" value="0" step="0.1"
+        aria-label="재생 위치" />
+
+      <div class="times">
+        <span id="curTime">0:00</span>
+        <span id="durTime">0:00</span>
+      </div>
+
+      <div class="controls">
+        <button type="button" id="back3" class="btn ctl" aria-label="3초 뒤로">
+          <span class="ico">⏪</span><span class="lbl">-3초</span>
+        </button>
+        <button type="button" id="playPause" class="btn ctl primary" aria-label="재생 또는 일시정지">
+          <span class="ico" id="ppIco">▶</span><span class="lbl" id="ppLbl">재생</span>
+        </button>
+        <button type="button" id="fwd3" class="btn ctl" aria-label="3초 앞으로">
+          <span class="ico">⏩</span><span class="lbl">+3초</span>
+        </button>
+        <button type="button" id="record" class="btn ctl rec" aria-label="녹음 시작 또는 정지">
+          <span class="ico" id="recIco">●</span><span class="lbl" id="recLbl">녹음</span>
+        </button>
+      </div>
+
+      <div class="myrec" id="myrec" hidden>
+        <button type="button" id="playRec" class="btn small" aria-label="내 녹음 듣기">▶ 내 녹음 듣기</button>
+        <span class="hint">방금 녹음 (저장되지 않음)</span>
+      </div>
+
+      <div class="status" id="status" role="status"></div>
+    </section>
+
+    <!-- 로그인 게이트 -->
+    <section class="card auth" id="authCard">
+      <p id="authMsg">구글 드라이브의 <b>Audio</b> 폴더를 불러오려면 로그인하세요.</p>
+      <button type="button" id="signIn" class="btn wide primary">구글로 로그인</button>
+    </section>
+
+    <!-- 하단: 음원 리스트 -->
+    <section class="card list" aria-label="음원 목록">
+      <header class="list-head">
+        <h2>음원 목록</h2>
+        <button type="button" id="refresh" class="btn small" aria-label="목록 새로고침">↻ 새로고침</button>
+      </header>
+      <ol id="tracks" class="tracks"></ol>
+      <p class="empty" id="listEmpty" hidden>Audio 폴더에 mp3 파일이 없습니다.</p>
+    </section>
+
+    <!-- 타이핑 공간 -->
+    <section class="card notes" aria-label="타이핑 공간">
+      <div class="notes-head">
+        <label for="note">받아쓰기 · 메모</label>
+        <span class="hint" id="noteCount">0자 · 저장되지 않음</span>
+      </div>
+      <textarea id="note" placeholder="들리는 대로 받아써 보세요. (페이지를 닫으면 사라집니다)"></textarea>
+    </section>
+  </main>
+
+  <!-- 숨은 오디오 엘리먼트 -->
+  <audio id="audio" preload="metadata"></audio>
+  <audio id="recAudio"></audio>
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script src="app.js"></script>
+</body>
+</html>
