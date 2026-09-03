@@ -1,5 +1,5 @@
 /* 앱 껍데기만 캐시합니다. 음원/구글 API 요청은 항상 네트워크로 통과. */
-const CACHE = 'langlab-v1';
+const CACHE = 'langlab-v2';
 const SHELL = [
   './',
   './index.html',
