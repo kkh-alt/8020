@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MP3 플레이어</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #1c1e26;
+    color: #f0f0f3;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+  .player {
+    width: 100%;
+    max-width: 480px;
+    background: #262933;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  header h1 { margin: 0 0 4px; font-size: 20px; }
+  .now-playing {
+    margin: 0;
+    color: #9a9db0;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .progress-section { display: flex; align-items: center; gap: 10px; }
+  .time {
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    color: #9a9db0;
+    min-width: 38px;
+    text-align: center;
+  }
+  .seek-bar { flex: 1; accent-color: #6c8cff; cursor: pointer; }
+  .controls { display: flex; align-items: center; justify-content: center; gap: 12px; }
+  .controls.secondary { justify-content: space-between; }
+  .ctrl-btn {
+    background: #333747;
+    color: #f0f0f3;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+  }
+  .ctrl-btn:hover { background: #3d4256; }
+  .ctrl-btn:active { transform: scale(0.96); }
+  .play-btn {
+    background: #6c8cff;
+    color: #10121a;
+    font-size: 20px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .play-btn:hover { background: #7f9cff; }
+  .record-btn.recording {
+    background: #ff5c5c;
+    color: #10121a;
+    animation: pulse 1.2s infinite;
+  }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+  .toggle.active { background: #6c8cff; color: #10121a; }
+  .speed-control { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #9a9db0; }
+  .speed-control select {
+    background: #333747;
+    color: #f0f0f3;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .record-panel {
+    background: #1c1e26;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .record-status { margin: 0; font-size: 13px; color: #9a9db0; }
+  .record-panel audio { width: 100%; }
+  .track-list-section { border-top: 1px solid #333747; padding-top: 12px; }
+  .track-list-header { display: flex; justify-content: space-between; font-size: 13px; color: #9a9db0; margin-bottom: 8px; }
+  .track-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    border-radius: 10px;
+    background: #1c1e26;
+  }
+  .track-list li {
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #262933;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .track-list li:last-child { border-bottom: none; }
+  .track-list li:hover { background: #2c303d; }
+  .track-list li.active { background: #333c66; color: #a9bcff; font-weight: 600; }
+  .track-list li.empty { color: #6b6e7d; cursor: default; }
+  .track-list li.empty:hover { background: transparent; }
+</style>
+</head>
+<body>
+  <div class="player">
+    <header>
+      <h1>MP3 플레이어</h1>
+      <p class="now-playing" id="nowPlaying">불러오는 중...</p>
+    </header>
+
+    <section class="progress-section">
+      <span class="time" id="currentTime">0:00</span>
+      <input type="range" id="seekBar" class="seek-bar" min="0" max="100" value="0" step="0.1" />
+      <span class="time" id="durationTime">0:00</span>
+    </section>
+
+    <section class="controls">
+      <button id="backBtn" class="ctrl-btn" title="2초 뒤로">⏪ 2초</button>
+      <button id="playBtn" class="ctrl-btn play-btn" title="재생/일시정지">▶</button>
+      <button id="forwardBtn" class="ctrl-btn" title="2초 앞으로">2초 ⏩</button>
+      <button id="recordBtn" class="ctrl-btn record-btn" title="녹음 시작/정지">🎤 녹음</button>
+    </section>
+
+    <section class="controls secondary">
+      <button id="repeatBtn" class="ctrl-btn toggle" title="반복">🔁 반복</button>
+      <div class="speed-control">
+        <label for="speedSelect">속도</label>
+        <select id="speedSelect">
+          <option value="0.5">0.5x</option>
+          <option value="0.75">0.75x</option>
+          <option value="1" selected>1x</option>
+          <option value="1.25">1.25x</option>
+          <option value="1.5">1.5x</option>
+          <option value="2">2x</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="record-panel" id="recordPanel" hidden>
+      <p class="record-status" id="recordStatus">녹음 준비 중...</p>
+      <audio id="recordedAudio" controls></audio>
+    </section>
+
+    <section class="track-list-section">
+      <div class="track-list-header">
+        <span>재생 목록</span>
+        <span id="trackCount"></span>
+      </div>
+      <ul id="trackList" class="track-list"><li class="empty">Drive에서 목록을 불러오는 중...</li></ul>
+    </section>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+
+<script>
+  // TODO: 배포된 앱스 스크립트 웹앱 URL(.../exec)을 넣으세요. 목록 조회에만 씁니다.
+  var GAS_EXEC_URL = 'https://script.google.com/macros/s/AKfycbyv7MdT8uz7vR5liKIE6k0YDHt0YYyegJCeqRzCSFvU2kEu1OQg25GO1_bB2LnI1IY9fQ/exec';
+  // API 키는 mp3-player/gas/Code.gs와 동일한 값입니다 (재생 스트리밍 전용).
+  var DRIVE_API_KEY = 'AIzaSyCENWyaW5BzGsDR9FXjAUNxFFD3IEisgBI';
+
+  const audio = document.getElementById('audio');
+  const playBtn = document.getElementById('playBtn');
+  const backBtn = document.getElementById('backBtn');
+  const forwardBtn = document.getElementById('forwardBtn');
+  const repeatBtn = document.getElementById('repeatBtn');
+  const speedSelect = document.getElementById('speedSelect');
+  const seekBar = document.getElementById('seekBar');
+  const currentTimeEl = document.getElementById('currentTime');
+  const durationTimeEl = document.getElementById('durationTime');
+  const nowPlayingEl = document.getElementById('nowPlaying');
+  const trackListEl = document.getElementById('trackList');
+  const trackCountEl = document.getElementById('trackCount');
+
+  const recordBtn = document.getElementById('recordBtn');
+  const recordPanel = document.getElementById('recordPanel');
+  const recordStatus = document.getElementById('recordStatus');
+  const recordedAudio = document.getElementById('recordedAudio');
+
+  let tracks = [];
+  let currentIndex = -1;
+  let isSeeking = false;
+
+  function formatTime(sec) {
+    if (!Number.isFinite(sec)) return '0:00';
+    const m = Math.floor(sec / 60);
+    const s = Math.floor(sec % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  // Natural sort so "02-1.mp3" < "02-2.mp3" < "02-10.mp3" regardless of zero-padding.
+  function naturalCompare(a, b) {
+    const tokenize = (s) => {
+      const out = [];
+      s.replace(/(\d+)|(\D+)/g, (_, digits, rest) => {
+        out.push(digits !== undefined ? [0, parseInt(digits, 10)] : [1, rest]);
+        return '';
+      });
+      return out;
+    };
+    const ax = tokenize(a);
+    const bx = tokenize(b);
+    const len = Math.min(ax.length, bx.length);
+    for (let i = 0; i < len; i++) {
+      const [at, av] = ax[i];
+      const [bt, bv] = bx[i];
+      if (at !== bt) return at - bt;
+      if (av !== bv) return typeof av === 'number' ? av - bv : (av < bv ? -1 : 1);
+    }
+    return ax.length - bx.length;
+  }
+
+  function trackUrl(id) {
+    return `https://www.googleapis.com/drive/v3/files/${id}?alt=media&key=${DRIVE_API_KEY}`;
+  }
+
+  async function loadTracks() {
+    let files;
+    try {
+      const res = await fetch(GAS_EXEC_URL + '?format=json');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      files = await res.json();
+    } catch (e) {
+      trackListEl.innerHTML = '<li class="empty">목록을 불러오지 못했습니다: ' + (e && e.message ? e.message : e) + '</li>';
+      nowPlayingEl.textContent = '오류가 발생했습니다';
+      return;
+    }
+
+    files.sort((a, b) => naturalCompare(a.name, b.name));
+    tracks = files;
+
+    if (!tracks.length) {
+      trackListEl.innerHTML = '<li class="empty">Drive 폴더에 mp3 파일이 없습니다.</li>';
+      trackCountEl.textContent = '';
+      nowPlayingEl.textContent = '재생할 곡이 없습니다';
+      return;
+    }
+
+    trackCountEl.textContent = `${tracks.length}곡`;
+    trackListEl.innerHTML = '';
+    tracks.forEach((track, idx) => {
+      const li = document.createElement('li');
+      li.textContent = track.name;
+      li.dataset.index = idx;
+      li.addEventListener('click', () => selectTrack(idx, true));
+      trackListEl.appendChild(li);
+    });
+
+    selectTrack(0, false);
+  }
+
+  function selectTrack(idx, autoplay) {
+    if (idx < 0 || idx >= tracks.length) return;
+    currentIndex = idx;
+    const track = tracks[idx];
+    audio.src = trackUrl(track.id);
+    audio.playbackRate = parseFloat(speedSelect.value);
+    nowPlayingEl.textContent = track.name;
+
+    [...trackListEl.children].forEach((li) => {
+      li.classList.toggle('active', Number(li.dataset.index) === idx);
+    });
+    const activeLi = trackListEl.children[idx];
+    if (activeLi) activeLi.scrollIntoView({ block: 'nearest' });
+
+    if (autoplay) audio.play().catch(() => {});
+  }
+
+  function playNext() {
+    if (currentIndex + 1 < tracks.length) {
+      selectTrack(currentIndex + 1, true);
+    } else {
+      playBtn.textContent = '▶';
+    }
+  }
+
+  playBtn.addEventListener('click', () => {
+    if (!audio.src) return;
+    if (audio.paused) audio.play().catch(() => {});
+    else audio.pause();
+  });
+
+  audio.addEventListener('play', () => { playBtn.textContent = '⏸'; });
+  audio.addEventListener('pause', () => { playBtn.textContent = '▶'; });
+  audio.addEventListener('error', () => {
+    const codes = { 1: '로딩이 중단됨', 2: '네트워크 오류', 3: '디코딩 오류', 4: '재생 불가(Drive 공유 설정/API 키를 확인하세요)' };
+    const code = audio.error ? audio.error.code : null;
+    nowPlayingEl.textContent = '재생 실패: ' + (codes[code] || ('알 수 없는 오류 ' + code));
+  });
+
+  backBtn.addEventListener('click', () => {
+    audio.currentTime = Math.max(0, audio.currentTime - 2);
+  });
+
+  forwardBtn.addEventListener('click', () => {
+    if (Number.isFinite(audio.duration)) {
+      audio.currentTime = Math.min(audio.duration, audio.currentTime + 2);
+    } else {
+      audio.currentTime += 2;
+    }
+  });
+
+  repeatBtn.addEventListener('click', () => {
+    audio.loop = !audio.loop;
+    repeatBtn.classList.toggle('active', audio.loop);
+  });
+
+  speedSelect.addEventListener('change', () => {
+    audio.playbackRate = parseFloat(speedSelect.value);
+  });
+
+  audio.addEventListener('loadedmetadata', () => {
+    seekBar.max = audio.duration || 0;
+    durationTimeEl.textContent = formatTime(audio.duration);
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    if (isSeeking) return;
+    seekBar.value = audio.currentTime;
+    currentTimeEl.textContent = formatTime(audio.currentTime);
+  });
+
+  seekBar.addEventListener('input', () => {
+    isSeeking = true;
+    currentTimeEl.textContent = formatTime(Number(seekBar.value));
+  });
+
+  seekBar.addEventListener('change', () => {
+    audio.currentTime = Number(seekBar.value);
+    isSeeking = false;
+  });
+
+  audio.addEventListener('ended', () => {
+    if (!audio.loop) playNext();
+  });
+
+  // --- Recording (fully client-side; playback only, never uploaded) ---
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recordedUrl = null;
+  let recordStream = null;
+
+  function pickRecordingMimeType() {
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+    return candidates.find((type) => MediaRecorder.isTypeSupported(type)) || '';
+  }
+
+  async function startRecording() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      recordPanel.hidden = false;
+      recordStatus.textContent = 'HTTPS 주소에서만 녹음이 가능합니다 (현재 주소: ' + location.protocol + '//' + location.host + ').';
+      return;
+    }
+    try {
+      recordStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      recordPanel.hidden = false;
+      recordStatus.textContent = '마이크 권한이 거부되었습니다: ' + (e && e.message ? e.message : e);
+      return;
+    }
+
+    recordedChunks = [];
+    const mimeType = pickRecordingMimeType();
+    mediaRecorder = mimeType ? new MediaRecorder(recordStream, { mimeType }) : new MediaRecorder(recordStream);
+    mediaRecorder.addEventListener('dataavailable', (e) => {
+      if (e.data.size > 0) recordedChunks.push(e.data);
+    });
+    mediaRecorder.addEventListener('stop', () => {
+      if (recordedUrl) URL.revokeObjectURL(recordedUrl);
+      const actualType = mediaRecorder.mimeType || 'audio/webm';
+      const blob = new Blob(recordedChunks, { type: actualType });
+      recordedUrl = URL.createObjectURL(blob);
+      recordedAudio.src = recordedUrl;
+      recordPanel.hidden = false;
+      recordStatus.textContent = `녹음 완료 (${actualType}). 재생해서 들어보세요.`;
+      recordStream.getTracks().forEach((t) => t.stop());
+      recordStream = null;
+    });
+
+    mediaRecorder.start();
+    recordPanel.hidden = false;
+    recordStatus.textContent = '녹음 중...';
+    recordBtn.classList.add('recording');
+    recordBtn.textContent = '⏹ 정지';
+  }
+
+  function stopRecording() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    recordBtn.classList.remove('recording');
+    recordBtn.textContent = '🎤 녹음';
+  }
+
+  recordBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') stopRecording();
+    else startRecording();
+  });
+
+  recordedAudio.addEventListener('error', () => {
+    const codes = { 1: '로딩이 중단됨', 2: '네트워크 오류', 3: '디코딩 오류(이 브라우저가 녹음 포맷을 재생하지 못함)', 4: '재생 불가' };
+    const code = recordedAudio.error ? recordedAudio.error.code : null;
+    recordStatus.textContent = '녹음 재생 실패: ' + (codes[code] || ('알 수 없는 오류 ' + code));
+  });
+
+  loadTracks();
+</script>
+</body>
+</html>
